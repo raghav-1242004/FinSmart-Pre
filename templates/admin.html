@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Admin – SmartLoan AI{% endblock %}
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<style>
+.layout-inner{display:flex;min-height:calc(100vh - 64px);}
+.sidebar{width:240px;min-height:100%;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);padding:1.5rem 1rem;display:flex;flex-direction:column;gap:0.3rem;}
+.sidebar-link{display:flex;align-items:center;gap:0.75rem;padding:0.7rem 0.9rem;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:0.875rem;font-weight:500;transition:all 0.2s;}
+.sidebar-link:hover,.sidebar-link.active{background:var(--surface2);color:var(--accent);}
+.sidebar-link i{width:18px;text-align:center;}
+.sidebar-divider{height:1px;background:var(--border);margin:0.8rem 0;}
+.main-area{flex:1;padding:2rem;overflow-x:hidden;}
+.admin-badge{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:var(--amber);border-radius:8px;padding:0.3rem 0.8rem;font-size:0.75rem;font-weight:700;}
+@media(max-width:768px){.sidebar{display:none;}.main-area{padding:1rem;}}
+</style>
+
+<div class="layout-inner">
+  <aside class="sidebar">
+    <a href="{{ url_for('dashboard') }}" class="sidebar-link"><i class="fa fa-chart-pie"></i> Dashboard</a>
+    <a href="{{ url_for('predict_page') }}" class="sidebar-link"><i class="fa fa-wand-magic-sparkles"></i> Predict</a>
+    <a href="{{ url_for('history') }}" class="sidebar-link"><i class="fa fa-clock-rotate-left"></i> History</a>
+    <div class="sidebar-divider"></div>
+    <a href="{{ url_for('admin_panel') }}" class="sidebar-link active"><i class="fa fa-shield"></i> Admin Panel</a>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">More</div>
+    <a href="{{ url_for('loan_contacts') }}" class="sidebar-link{% if request.endpoint == 'loan_contacts' %} active{% endif %}"><i class="fa fa-map-location-dot"></i> Loan Contacts</a>
+    <div class="sidebar-divider"></div>
+    <a href="{{ url_for('logout') }}" class="sidebar-link" style="color:var(--red)"><i class="fa fa-right-from-bracket"></i> Logout</a>
+  </aside>
+
+  <main class="main-area">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:2rem;flex-wrap:wrap;">
+      <div>
+        <div style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;">Admin Panel</div>
+        <div style="color:var(--text-muted);font-size:0.875rem;">System overview and user management</div>
+      </div>
+      <span class="admin-badge"><i class="fa fa-shield"></i> Admin Access</span>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2rem;">
+      <div class="glass metric-card">
+        <div class="metric-label">Total Users</div>
+        <div class="metric-value" style="color:var(--accent)">{{ users|length }}</div>
+      </div>
+      <div class="glass metric-card">
+        <div class="metric-label">Total Predictions</div>
+        <div class="metric-value" style="color:var(--text)">{{ total }}</div>
+      </div>
+      <div class="glass metric-card">
+        <div class="metric-label">Approved</div>
+        <div class="metric-value" style="color:var(--green)">{{ approved }}</div>
+      </div>
+      <div class="glass metric-card">
+        <div class="metric-label">Rejected</div>
+        <div class="metric-value" style="color:var(--red)">{{ rejected }}</div>
+      </div>
+      <div class="glass metric-card">
+        <div class="metric-label">Approval Rate</div>
+        <div class="metric-value" style="color:var(--amber)">{{ ((approved/total*100)|round(1) if total else 0) }}%</div>
+      </div>
+      <div class="glass metric-card">
+        <div class="metric-label">Best Model</div>
+        <div class="metric-value" style="font-size:0.9rem;color:var(--accent2)">{{ meta.best_model_name }}</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem;">
+      <div class="glass" style="padding:1.5rem;border-radius:var(--radius);">
+        <div style="font-family:var(--font-head);font-weight:700;font-size:0.95rem;margin-bottom:1rem;">System Approval Split</div>
+        <canvas id="adminApproval" height="200"></canvas>
+      </div>
+      <div class="glass" style="padding:1.5rem;border-radius:var(--radius);">
+        <div style="font-family:var(--font-head);font-weight:700;font-size:0.95rem;margin-bottom:1rem;">Model Comparison – All Metrics</div>
+        <canvas id="allMetrics" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="glass" style="padding:1.5rem;border-radius:var(--radius);margin-bottom:2rem;">
+      <div style="font-family:var(--font-head);font-weight:700;font-size:1rem;margin-bottom:1rem;">Registered Users</div>
+      <div style="overflow-x:auto;">
+        <table class="smart-table">
+          <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
+          <tbody>
+          {% for u in users %}
+          <tr>
+            <td style="color:var(--text-muted)">#{{ u.id }}</td>
+            <td><b>{{ u.username }}</b></td>
+            <td>{{ u.email }}</td>
+            <td>
+              {% if u.role == 'admin' %}
+              <span style="background:rgba(245,158,11,0.12);color:var(--amber);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:0.2rem 0.6rem;font-size:0.75rem;font-weight:600;">Admin</span>
+              {% else %}
+              <span style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:10px;padding:0.2rem 0.6rem;font-size:0.75rem;">User</span>
+              {% endif %}
+            </td>
+            <td style="color:var(--text-muted);font-size:0.8rem;">{{ u.created_at.strftime('%b %d, %Y') }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- All Predictions -->
+    <div class="glass" style="padding:1.5rem;border-radius:var(--radius);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+        <div style="font-family:var(--font-head);font-weight:700;font-size:1rem;">All System Predictions</div>
+        <div style="font-size:0.8rem;color:var(--text-muted);">{{ predictions|length }} total</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="smart-table">
+          <thead><tr><th>ID</th><th>User ID</th><th>Result</th><th>Loan Amt</th><th>Grade</th><th>Risk</th><th>Date</th><th>PDF</th></tr></thead>
+          <tbody>
+          {% for p in predictions[:50] %}
+          <tr>
+            <td style="color:var(--text-muted)">#{{ p.id }}</td>
+            <td style="color:var(--text-muted)">User #{{ p.user_id }}</td>
+            <td><span class="{{ 'badge-approved' if p.result=='APPROVED' else 'badge-rejected' }}">{{ p.result }}</span></td>
+            <td>₹{{ "{:,.0f}".format(p.loan_amnt) }}</td>
+            <td style="font-weight:700;color:{% if p.loan_grade in ['A','B'] %}var(--green){% elif p.loan_grade == 'C' %}var(--amber){% else %}var(--red){% endif %}">{{ p.loan_grade or '–' }}</td>
+            <td>{{ p.risk_pct }}%</td>
+            <td style="color:var(--text-muted);font-size:0.8rem;">{{ p.created_at.strftime('%b %d, %H:%M') }}</td>
+            <td><a href="/api/export-pdf/{{ p.id }}" class="btn-ghost" style="padding:0.3rem 0.6rem;font-size:0.75rem;"><i class="fa fa-file-pdf" style="color:var(--red)"></i></a></td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+new Chart(document.getElementById('adminApproval'), {
+  type:'pie',
+  data:{ labels:['Approved','Rejected'],
+    datasets:[{data:[{{ approved or 1 }}, {{ rejected or 1 }}],
+      backgroundColor:['#10b981','#ef4444'], borderWidth:0}]},
+  options:{plugins:{legend:{position:'bottom'}}}
+});
+
+const modelNames = {{ meta.all_model_metrics.keys()|list|tojson }};
+const accVals  = {{ meta.all_model_metrics.values()|map(attribute='accuracy')|list|tojson }};
+const f1Vals   = {{ meta.all_model_metrics.values()|map(attribute='f1')|list|tojson }};
+const aucVals  = {{ meta.all_model_metrics.values()|map(attribute='roc_auc')|list|tojson }};
+new Chart(document.getElementById('allMetrics'), {
+  type:'radar',
+  data:{ labels: modelNames,
+    datasets:[
+      {label:'Accuracy', data:accVals.map(v=>+(v*100).toFixed(1)), borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,0.1)', pointRadius:4},
+      {label:'F1 Score', data:f1Vals.map(v=>+(v*100).toFixed(1)),  borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', pointRadius:4},
+      {label:'ROC-AUC',  data:aucVals.map(v=>+(v*100).toFixed(1)), borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.1)', pointRadius:4},
+    ]},
+  options:{scales:{r:{min:75,max:100,grid:{color:'rgba(255,255,255,0.08)'},ticks:{backdropColor:'transparent',color:'#7a8ba3'}}}}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Login – SmartLoan AI{% endblock %}
+{% block content %}
+<style>
+.auth-wrap { min-height: calc(100vh - 64px); display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.auth-card { width: 100%; max-width: 440px; padding: 2.5rem; border-radius: 20px; }
+.auth-logo { text-align:center; margin-bottom:2rem; }
+.auth-logo .brand-icon2 { width:56px;height:56px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:16px;display:inline-grid;place-items:center;font-size:1.5rem;color:#fff;margin-bottom:0.75rem; }
+.auth-title { font-family:var(--font-head);font-size:1.8rem;font-weight:800;text-align:center;margin-bottom:0.3rem; }
+.auth-sub { text-align:center;color:var(--text-muted);font-size:0.875rem;margin-bottom:2rem; }
+.divider { display:flex;align-items:center;gap:1rem;margin:1.5rem 0; }
+.divider::before,.divider::after { content:'';flex:1;height:1px;background:var(--border); }
+.divider span { font-size:0.75rem;color:var(--text-muted); }
+</style>
+<div class="auth-wrap">
+  <div class="glass auth-card">
+    <div class="auth-logo">
+      <div class="brand-icon2"><i class="fa fa-brain"></i></div>
+      <div class="auth-title">Welcome Back</div>
+      <div class="auth-sub">Sign in to SmartLoan AI</div>
+    </div>
+    <div id="errMsg" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:0.75rem 1rem;font-size:0.875rem;color:var(--red);margin-bottom:1rem;"></div>
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input type="text" class="form-control-smart" id="username" placeholder="Enter username" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div style="position:relative;">
+        <input type="password" class="form-control-smart" id="password" placeholder="Enter password" autocomplete="current-password" style="padding-right:3rem;"/>
+        <button onclick="togglePwd()" style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;" id="eyeBtn"><i class="fa fa-eye"></i></button>
+      </div>
+    </div>
+    <button class="btn-primary-smart w-100 justify-content-center" style="margin-top:0.5rem;padding:0.85rem;" onclick="doLogin()" id="loginBtn">
+      <i class="fa fa-arrow-right-to-bracket"></i> Sign In
+    </button>
+    <div class="divider"><span>OR</span></div>
+    <a href="{{ url_for('register') }}" class="btn-ghost w-100 text-center d-block" style="padding:0.75rem;">
+      Create New Account
+    </a>
+  </div>
+</div>
+<script>
+function togglePwd() {
+  const inp = document.getElementById('password');
+  const btn = document.getElementById('eyeBtn');
+  if (inp.type === 'password') { inp.type = 'text'; btn.innerHTML = '<i class="fa fa-eye-slash"></i>'; }
+  else { inp.type = 'password'; btn.innerHTML = '<i class="fa fa-eye"></i>'; }
+}
+async function doLogin() {
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('errMsg');
+  btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Signing in…'; btn.disabled = true;
+  const res = await fetch('/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({username: document.getElementById('username').value, password: document.getElementById('password').value})
+  });
+  const data = await res.json();
+  if (data.success) {
+    window.location.href = '/dashboard';
+  } else {
+    err.textContent = data.message; err.style.display = 'block';
+    btn.innerHTML = '<i class="fa fa-arrow-right-to-bracket"></i> Sign In'; btn.disabled = false;
+  }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+{% endblock %}

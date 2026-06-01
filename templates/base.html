@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}SmartLoan AI{% endblock %}</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Design Tokens ─────────────────────────── */
+    :root {
+      --bg:        #050a14;
+      --bg2:       #0c1525;
+      --surface:   rgba(255,255,255,0.04);
+      --surface2:  rgba(255,255,255,0.08);
+      --border:    rgba(255,255,255,0.10);
+      --text:      #e8edf5;
+      --text-muted:#7a8ba3;
+      --accent:    #00d4ff;
+      --accent2:   #7c3aed;
+      --green:     #10b981;
+      --red:       #ef4444;
+      --amber:     #f59e0b;
+      --glow:      0 0 30px rgba(0,212,255,0.15);
+      --radius:    16px;
+      --font-head: 'Poppins', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      transition: background 0.4s, color 0.4s;
+    }
+    [data-theme="light"] {
+      --bg:       #f0f4ff;
+      --bg2:      #e4ebf8;
+      --surface:  rgba(255,255,255,0.7);
+      --surface2: rgba(255,255,255,0.9);
+      --border:   rgba(0,0,0,0.10);
+      --text:     #1a2035;
+      --text-muted:#5a6a82;
+    }
+
+    /* ── Base ──────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+    }
+    body {
+      font-family: var(--font-body);
+      font-size: 1rem;
+      line-height: 1.65;
+      letter-spacing: 0.01em;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      font-family: var(--font-head);
+      color: var(--text);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    h1 { font-weight: 700; font-size: clamp(2.25rem, 3.5vw, 3.75rem); }
+    h2 { font-weight: 700; font-size: clamp(1.75rem, 2.8vw, 2.5rem); }
+    h3 { font-weight: 600; font-size: clamp(1.4rem, 2.3vw, 1.9rem); }
+    h4, h5, h6 { font-weight: 600; }
+    p, span, label, input, button, a, td, th, li { font-family: var(--font-body); }
+
+    /* ── Animated Background ───────────────────── */
+    .bg-canvas {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .bg-orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(80px); opacity: 0.18;
+      animation: floatOrb 12s ease-in-out infinite alternate;
+    }
+    .bg-orb:nth-child(1) {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, #00d4ff, transparent);
+      top: -100px; left: -100px;
+      animation-duration: 14s;
+    }
+    .bg-orb:nth-child(2) {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, #7c3aed, transparent);
+      bottom: 10%; right: -80px;
+      animation-duration: 10s;
+    }
+    .bg-orb:nth-child(3) {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, #10b981, transparent);
+      top: 50%; left: 40%;
+      animation-duration: 16s;
+    }
+    @keyframes floatOrb {
+      0%   { transform: translate(0,0) scale(1); }
+      100% { transform: translate(40px, 30px) scale(1.1); }
+    }
+    .page-content { position: relative; z-index: 1; }
+
+    /* ── Glassmorphism Card ─────────────────────── */
+    .glass {
+      background: var(--surface);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: box-shadow 0.3s, transform 0.3s;
+    }
+    .glass:hover { box-shadow: var(--glow); }
+    .glass-solid {
+      background: var(--surface2);
+      backdrop-filter: blur(24px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    /* ── Navbar ────────────────────────────────── */
+    .navbar-smart {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(5,10,20,0.7);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    [data-theme="light"] .navbar-smart { background: rgba(240,244,255,0.7); }
+    .nav-brand {
+      font-family: var(--font-head);
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: var(--text);
+      text-decoration: none;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .nav-brand .brand-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 1rem; color: #fff;
+    }
+    .nav-links { display: flex; align-items: center; gap: 0.5rem; }
+    .nav-links a {
+      font-size: 0.875rem; font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .nav-links a:hover { background: var(--surface2); color: var(--text); }
+    .nav-links a.active { color: var(--accent); }
+
+    /* ── Buttons ────────────────────────────────── */
+    .btn-primary-smart {
+      background: linear-gradient(135deg, var(--accent), #0098cc);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.65rem 1.45rem;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.25s;
+      text-decoration: none;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+    .btn-primary-smart:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,212,255,0.35);
+      color: #fff;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.6rem 1.4rem;
+      font-family: var(--font-body);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s;
+      text-decoration: none;
+      font-size: 0.875rem;
+    }
+    .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+    /* ── Badge / Pill ───────────────────────────── */
+    .badge-approved { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); border-radius: 20px; padding: 0.25rem 0.8rem; font-size: 0.78rem; font-weight: 600; }
+    .badge-rejected { background: rgba(239,68,68,0.15);  color: var(--red);   border: 1px solid rgba(239,68,68,0.3);  border-radius: 20px; padding: 0.25rem 0.8rem; font-size: 0.78rem; font-weight: 600; }
+
+    /* ── Form ───────────────────────────────────── */
+    .form-group { margin-bottom: 1.1rem; }
+    .form-label { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.4rem; display: block; }
+    .form-control-smart {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 0.7rem 1rem;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-control-smart:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.12);
+    }
+    .form-control-smart option { background: var(--bg2); }
+
+    /* ── Table ──────────────────────────────────── */
+    .smart-table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
+    .smart-table thead th {
+      font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-muted);
+      padding: 0.5rem 1rem; border-bottom: 1px solid var(--border);
+    }
+    .smart-table tbody tr {
+      background: var(--surface);
+      border-radius: 10px;
+      transition: background 0.2s;
+    }
+    .smart-table tbody tr:hover { background: var(--surface2); }
+    .smart-table tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; }
+    .smart-table tbody td:first-child { border-radius: 10px 0 0 10px; }
+    .smart-table tbody td:last-child  { border-radius: 0 10px 10px 0; }
+
+    /* ── Metric Card ─────────────────────────────── */
+    .metric-card {
+      padding: 1.4rem;
+      border-radius: var(--radius);
+    }
+    .metric-label {
+      font-size: 0.75rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted); margin-bottom: 0.5rem;
+    }
+    .metric-value, .stat-num {
+      font-family: var(--font-body);
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .metric-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.3rem; }
+
+    /* ── Progress Ring ──────────────────────────── */
+    .ring-wrap { display: flex; align-items: center; gap: 1rem; }
+    .ring svg { transform: rotate(-90deg); }
+    .ring-track { fill: none; stroke: var(--surface2); }
+    .ring-prog  { fill: none; stroke-linecap: round; transition: stroke-dashoffset 1.2s ease; }
+
+    /* ── Theme Toggle ───────────────────────────── */
+    .theme-toggle {
+      width: 44px; height: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.3s;
+    }
+    .theme-toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 16px; height: 16px;
+      background: var(--accent);
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+    [data-theme="light"] .theme-toggle::after { transform: translateX(20px); }
+
+    /* ── Scroll animation ───────────────────────── */
+    .fade-up { opacity: 0; transform: translateY(30px); transition: all 0.6s ease; }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Toast ──────────────────────────────────── */
+    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; }
+    .toast-msg {
+      background: var(--glass-solid, #0c1525);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.8rem 1.2rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      backdrop-filter: blur(20px);
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── Sidebar (dashboard) ────────────────────── */
+    .sidebar {
+      width: 240px; min-height: 100vh; flex-shrink: 0;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1rem;
+      display: flex; flex-direction: column; gap: 0.3rem;
+    }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.7rem 0.9rem; border-radius: 10px;
+      color: var(--text-muted); text-decoration: none;
+      font-size: 0.875rem; font-weight: 500;
+      transition: all 0.2s;
+    }
+    .sidebar-link:hover, .sidebar-link.active {
+      background: var(--surface2); color: var(--accent);
+    }
+    .sidebar-link i { width: 18px; text-align: center; }
+    .layout-inner { display: flex; min-height: calc(100vh - 64px); }
+    .main-area { flex: 1; padding: 2rem; overflow-x: hidden; }
+
+    /* ── Responsive ─────────────────────────────── */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main-area { padding: 1rem; }
+      .navbar-smart { padding: 0.75rem 1rem; }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="bg-canvas">
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar-smart">
+  <a href="{{ url_for('index') }}" class="nav-brand">
+    <span class="brand-icon"><i class="fa-solid fa-brain"></i></span>
+    Fin<span style="color:var(--accent)">Smart</span> Pro
+  </a>
+  <div class="nav-links">
+    <a href="{{ url_for('calculators') }}" {% if request.endpoint == 'calculators' %}class="active"{% endif %}>
+      <i class="fa fa-calculator fa-fw"></i> Calculators
+    </a>
+    {% if session.get('user_id') %}
+      <a href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}class="active"{% endif %}><i class="fa fa-chart-pie fa-fw"></i> Dashboard</a>
+      <a href="{{ url_for('predict_page') }}" {% if request.endpoint == 'predict_page' %}class="active"{% endif %}><i class="fa fa-wand-magic-sparkles fa-fw"></i> AI Predict</a>
+      <a href="{{ url_for('history') }}" {% if request.endpoint == 'history' %}class="active"{% endif %}><i class="fa fa-clock-rotate-left fa-fw"></i> History</a>
+      <a href="{{ url_for('loan_contacts') }}" {% if request.endpoint == 'loan_contacts' %}class="active"{% endif %}><i class="fa fa-map-location-dot fa-fw"></i> Contacts</a>
+      {% if session.get('role') == 'admin' %}
+      <a href="{{ url_for('admin_panel') }}" style="color:var(--amber)"><i class="fa fa-shield fa-fw"></i> Admin</a>
+      {% endif %}
+      <a href="{{ url_for('logout') }}" class="btn-ghost ms-2">Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">Login</a>
+      <a href="{{ url_for('register') }}" class="btn-primary-smart">Get Started</a>
+    {% endif %}
+    <button class="theme-toggle ms-3" onclick="toggleTheme()" title="Toggle theme"></button>
+  </div>
+</nav>
+
+<div class="page-content">
+  {% block content %}{% endblock %}
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const cur = html.getAttribute('data-theme');
+  html.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  localStorage.setItem('theme', cur === 'dark' ? 'light' : 'dark');
+}
+(function() {
+  const t = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+
+function showToast(msg, type='info') {
+  const c = document.getElementById('toastContainer');
+  const d = document.createElement('div');
+  const colors = { success:'var(--green)', error:'var(--red)', info:'var(--accent)' };
+  d.className = 'toast-msg';
+  d.style.borderLeftColor = colors[type] || colors.info;
+  d.style.borderLeftWidth = '3px';
+  d.style.borderLeftStyle = 'solid';
+  d.innerHTML = msg;
+  c.appendChild(d);
+  setTimeout(() => d.remove(), 3500);
+}
+
+// Fade-up observer
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

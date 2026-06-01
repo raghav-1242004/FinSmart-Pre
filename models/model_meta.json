@@ -1,0 +1,244 @@
+{
+  "best_model_name": "CatBoost",
+  "feature_cols": [
+    "person_age",
+    "person_income",
+    "person_home_ownership",
+    "person_emp_length",
+    "loan_intent",
+    "loan_grade",
+    "loan_amnt",
+    "loan_int_rate",
+    "loan_percent_income",
+    "cb_person_default_on_file",
+    "cb_person_cred_hist_length"
+  ],
+  "top_features": [
+    "loan_percent_income",
+    "person_income",
+    "loan_int_rate",
+    "loan_grade",
+    "person_home_ownership",
+    "loan_intent",
+    "loan_amnt",
+    "person_emp_length"
+  ],
+  "dataset": "clean_loan_data.csv (32411 rows, label flipped: 1=APPROVED)",
+  "label_note": "loan_status=1 means APPROVED (non-default), 0 means REJECTED (default)",
+  "all_model_metrics": {
+    "Random Forest": {
+      "accuracy": 0.9309,
+      "precision": 0.9268,
+      "recall": 0.9897,
+      "f1": 0.9572,
+      "roc_auc": 0.9359
+    },
+    "XGBoost": {
+      "accuracy": 0.9343,
+      "precision": 0.9346,
+      "recall": 0.9848,
+      "f1": 0.959,
+      "roc_auc": 0.9488
+    },
+    "Logistic Regression": {
+      "accuracy": 0.847,
+      "precision": 0.8679,
+      "recall": 0.9485,
+      "f1": 0.9064,
+      "roc_auc": 0.8509
+    },
+    "Decision Tree": {
+      "accuracy": 0.9294,
+      "precision": 0.9227,
+      "recall": 0.9927,
+      "f1": 0.9564,
+      "roc_auc": 0.9143
+    },
+    "CatBoost": {
+      "accuracy": 0.9378,
+      "precision": 0.9312,
+      "recall": 0.9939,
+      "f1": 0.9615,
+      "roc_auc": 0.9478
+    }
+  },
+  "feature_importances": {
+    "random_forest": [
+      [
+        "loan_percent_income",
+        0.22627374319111837
+      ],
+      [
+        "person_income",
+        0.14686448012111972
+      ],
+      [
+        "loan_int_rate",
+        0.11696826454597828
+      ],
+      [
+        "loan_grade",
+        0.11091967967842246
+      ],
+      [
+        "person_home_ownership",
+        0.10232837014862664
+      ],
+      [
+        "loan_intent",
+        0.07543566150463812
+      ],
+      [
+        "loan_amnt",
+        0.07154989221128921
+      ],
+      [
+        "person_emp_length",
+        0.06265724636295741
+      ],
+      [
+        "person_age",
+        0.042153406836242927
+      ],
+      [
+        "cb_person_cred_hist_length",
+        0.03389611201498732
+      ],
+      [
+        "cb_person_default_on_file",
+        0.010953143384619588
+      ]
+    ],
+    "xgboost": [
+      [
+        "loan_grade",
+        0.32780924439430237
+      ],
+      [
+        "person_home_ownership",
+        0.2370733916759491
+      ],
+      [
+        "loan_percent_income",
+        0.19437368214130402
+      ],
+      [
+        "loan_intent",
+        0.08929934352636337
+      ],
+      [
+        "person_income",
+        0.054178256541490555
+      ],
+      [
+        "person_emp_length",
+        0.027750106528401375
+      ],
+      [
+        "loan_int_rate",
+        0.01721302606165409
+      ],
+      [
+        "person_age",
+        0.01690889708697796
+      ],
+      [
+        "loan_amnt",
+        0.013355731032788754
+      ],
+      [
+        "cb_person_cred_hist_length",
+        0.012179184705018997
+      ],
+      [
+        "cb_person_default_on_file",
+        0.009859049692749977
+      ]
+    ],
+    "selectkbest": [
+      [
+        "loan_percent_income",
+        5409.137720433707
+      ],
+      [
+        "loan_grade",
+        5252.8485972173075
+      ],
+      [
+        "loan_int_rate",
+        3693.252851906027
+      ],
+      [
+        "person_income",
+        2088.7714845736855
+      ],
+      [
+        "person_home_ownership",
+        1515.9040304805987
+      ],
+      [
+        "cb_person_default_on_file",
+        1077.1760788510098
+      ],
+      [
+        "loan_amnt",
+        361.5356435954642
+      ],
+      [
+        "person_emp_length",
+        265.3980039830453
+      ],
+      [
+        "loan_intent",
+        141.04591525344765
+      ],
+      [
+        "person_age",
+        23.849360332134175
+      ],
+      [
+        "cb_person_cred_hist_length",
+        12.871384196838786
+      ]
+    ]
+  },
+  "rfe_features": [
+    "person_age",
+    "person_home_ownership",
+    "loan_intent",
+    "loan_grade",
+    "loan_amnt",
+    "loan_percent_income",
+    "cb_person_default_on_file",
+    "cb_person_cred_hist_length"
+  ],
+  "encoding_maps": {
+    "person_home_ownership": {
+      "0": "MORTGAGE",
+      "1": "OTHER",
+      "2": "OWN",
+      "3": "RENT"
+    },
+    "loan_intent": {
+      "0": "DEBTCONSOLIDATION",
+      "1": "EDUCATION",
+      "2": "HOMEIMPROVEMENT",
+      "3": "MEDICAL",
+      "4": "PERSONAL",
+      "5": "VENTURE"
+    },
+    "loan_grade": {
+      "0": "A",
+      "1": "B",
+      "2": "C",
+      "3": "D",
+      "4": "E",
+      "5": "F",
+      "6": "G"
+    },
+    "cb_person_default_on_file": {
+      "0": "N",
+      "1": "Y"
+    }
+  }
+}

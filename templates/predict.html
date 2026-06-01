@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% block title %}Predict – SmartLoan AI{% endblock %}
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<style>
+.layout-inner{display:flex;min-height:calc(100vh - 64px);}
+.sidebar{width:240px;min-height:100%;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);padding:1.5rem 1rem;display:flex;flex-direction:column;gap:0.3rem;}
+.sidebar-link{display:flex;align-items:center;gap:0.75rem;padding:0.7rem 0.9rem;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:0.875rem;font-weight:500;transition:all 0.2s;}
+.sidebar-link:hover,.sidebar-link.active{background:var(--surface2);color:var(--accent);}
+.sidebar-link i{width:18px;text-align:center;}
+.sidebar-divider{height:1px;background:var(--border);margin:0.8rem 0;}
+.main-area{flex:1;padding:2rem;overflow-x:hidden;}
+.predict-grid{display:grid;grid-template-columns:1fr 400px;gap:2rem;align-items:start;}
+.form-title{font-family:var(--font-head);font-size:1.5rem;font-weight:800;margin-bottom:0.3rem;}
+.form-section-label{font-family:var(--font-head);font-size:0.9rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin:1.5rem 0 0.75rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border);}
+.fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+
+/* Result Card */
+.result-card{padding:2rem;border-radius:var(--radius);position:sticky;top:80px;}
+.result-decision{font-family:var(--font-head);font-size:2.5rem;font-weight:900;text-align:center;padding:1rem;border-radius:12px;margin-bottom:1.5rem;}
+.result-approved{background:rgba(16,185,129,0.12);color:var(--green);border:2px solid rgba(16,185,129,0.4);}
+.result-rejected{background:rgba(239,68,68,0.12);color:var(--red);border:2px solid rgba(239,68,68,0.4);}
+.gauge-wrap{position:relative;width:160px;height:80px;margin:0 auto 1rem;}
+.gauge-wrap svg{overflow:visible;}
+
+/* EMI Calculator */
+.emi-section{margin-top:2.5rem;padding:1.5rem;border-radius:var(--radius);}
+.emi-title{font-family:var(--font-head);font-size:1.2rem;font-weight:700;margin-bottom:1.5rem;}
+.emi-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;}
+.emi-result{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;padding:1.2rem;border-radius:12px;background:var(--surface);margin-top:1rem;}
+.emi-val{text-align:center;}
+.emi-val .val{font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--accent);}
+.emi-val .lbl{font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;}
+@media(max-width:1024px){.predict-grid{grid-template-columns:1fr;}.result-card{position:static;}}
+@media(max-width:768px){.sidebar{display:none;}.fields-grid{grid-template-columns:1fr;}.emi-grid{grid-template-columns:1fr;}.emi-result{grid-template-columns:1fr 1fr;}}
+</style>
+
+<div class="layout-inner">
+  <aside class="sidebar">
+    <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);padding:0 0.9rem;margin-bottom:0.3rem;">Main</div>
+    <a href="{{ url_for('dashboard') }}" class="sidebar-link"><i class="fa fa-chart-pie"></i> Dashboard</a>
+    <a href="{{ url_for('predict_page') }}" class="sidebar-link active"><i class="fa fa-wand-magic-sparkles"></i> Predict Loan</a>
+    <a href="{{ url_for('history') }}" class="sidebar-link"><i class="fa fa-clock-rotate-left"></i> History</a>
+    <div class="sidebar-divider"></div>
+    <a href="#emi" class="sidebar-link"><i class="fa fa-calculator"></i> EMI Calculator</a>
+    <a href="{{ url_for('export_csv') }}" class="sidebar-link"><i class="fa fa-file-csv"></i> Export CSV</a>
+    {% if session.get('role') == 'admin' %}<div class="sidebar-divider"></div><a href="{{ url_for('admin_panel') }}" class="sidebar-link"><i class="fa fa-shield"></i> Admin</a>{% endif %}
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">More</div>
+    <a href="{{ url_for('loan_contacts') }}" class="sidebar-link{% if request.endpoint == 'loan_contacts' %} active{% endif %}"><i class="fa fa-map-location-dot"></i> Loan Contacts</a>
+    <div class="sidebar-divider"></div>
+    <a href="{{ url_for('logout') }}" class="sidebar-link" style="color:var(--red)"><i class="fa fa-right-from-bracket"></i> Logout</a>
+  </aside>
+
+  <main class="main-area">
+    <div class="predict-grid">
+      <!-- FORM -->
+      <div>
+        <div style="margin-bottom:2rem;">
+          <div class="form-title">Loan Prediction</div>
+          <p style="color:var(--text-muted);font-size:0.875rem;">Fill all fields for an AI-powered eligibility decision.</p>
+        </div>
+        <div class="glass" style="padding:2rem;border-radius:var(--radius);">
+          <div class="form-section-label"><i class="fa fa-user fa-fw"></i> Personal Information</div>
+          <div class="fields-grid">
+            <div class="form-group">
+              <label class="form-label">Age (years)</label>
+              <input type="number" class="form-control-smart" id="person_age" min="18" max="100" placeholder="e.g. 30"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Annual Income (₹)</label>
+              <input type="number" class="form-control-smart" id="person_income" min="0" placeholder="e.g. 600000"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Employment Length (yrs)</label>
+              <input type="number" class="form-control-smart" id="person_emp_length" min="0" step="0.5" placeholder="e.g. 5"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Home Ownership</label>
+              <select class="form-control-smart" id="person_home_ownership">
+                <option value="">Select…</option>
+                <option value="RENT">Rent</option>
+                <option value="OWN">Own</option>
+                <option value="MORTGAGE">Mortgage</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-section-label"><i class="fa fa-landmark fa-fw"></i> Loan Details</div>
+          <div class="fields-grid">
+            <div class="form-group">
+              <label class="form-label">Loan Amount (₹)</label>
+              <input type="number" class="form-control-smart" id="loan_amnt" min="100" placeholder="e.g. 500000" oninput="autoLPI()"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Interest Rate (%)</label>
+              <input type="number" class="form-control-smart" id="loan_int_rate" min="0" max="40" step="0.1" placeholder="e.g. 12.5"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Loan Intent</label>
+              <select class="form-control-smart" id="loan_intent">
+                <option value="">Select…</option>
+                <option value="PERSONAL">Personal</option>
+                <option value="EDUCATION">Education</option>
+                <option value="MEDICAL">Medical</option>
+                <option value="VENTURE">Venture / Business</option>
+                <option value="HOMEIMPROVEMENT">Home Improvement</option>
+                <option value="DEBTCONSOLIDATION">Debt Consolidation</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Loan % of Income <small style="color:var(--accent)">(auto)</small></label>
+              <input type="number" class="form-control-smart" id="loan_percent_income" step="0.0001" placeholder="Auto-calculated" readonly/>
+            </div>
+          </div>
+
+          <div class="form-section-label"><i class="fa fa-credit-card fa-fw"></i> Credit Profile</div>
+          <div class="fields-grid">
+            <div class="form-group">
+              <label class="form-label">Loan Grade</label>
+              <select class="form-control-smart" id="loan_grade">
+                <option value="">Select…</option>
+                <option value="A">A – Excellent</option>
+                <option value="B">B – Very Good</option>
+                <option value="C">C – Good</option>
+                <option value="D">D – Fair</option>
+                <option value="E">E – Poor</option>
+                <option value="F">F – Very Poor</option>
+                <option value="G">G – Worst</option>
+              </select>
+              <div style="margin-top:0.5rem;">
+                <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:3px;"><span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span></div>
+                <div style="height:6px;border-radius:3px;background:linear-gradient(90deg,#10b981,#84cc16,#eab308,#f59e0b,#f97316,#ef4444,#dc2626);"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Credit History Length (yrs)</label>
+              <input type="number" class="form-control-smart" id="cb_person_cred_hist_length" min="0" max="50" placeholder="e.g. 5"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Default on File (CB)</label>
+              <select class="form-control-smart" id="cb_person_default_on_file">
+                <option value="">Select…</option>
+                <option value="N">No – Clean record</option>
+                <option value="Y">Yes – Has default</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn-primary-smart w-100 justify-content-center" style="margin-top:1.5rem;padding:1rem;font-size:1rem;" onclick="submitPrediction()" id="predictBtn">
+            <i class="fa fa-brain"></i> Predict Loan Eligibility
+          </button>
+        </div>
+      </div>
+
+      <!-- RESULT PANEL -->
+      <div>
+        <div class="glass result-card" id="resultPanel">
+          <div style="text-align:center;padding:3rem 2rem;color:var(--text-muted);">
+            <div style="font-size:3rem;margin-bottom:1rem;opacity:0.3;"><i class="fa fa-brain"></i></div>
+            <div style="font-family:var(--font-head);font-size:1rem;font-weight:600;">Awaiting Input</div>
+            <div style="font-size:0.8rem;margin-top:0.5rem;">Fill the form and click Predict</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMI Calculator -->
+    <div class="glass emi-section" id="emi" style="margin-top:2rem;">
+      <div class="emi-title"><i class="fa fa-calculator" style="color:var(--amber)"></i> EMI Calculator</div>
+      <div class="emi-grid">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Loan Principal (₹)</label>
+          <input type="number" class="form-control-smart" id="emiPrincipal" value="500000" oninput="calcEMI()"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Annual Rate (%)</label>
+          <input type="number" class="form-control-smart" id="emiRate" value="12.5" step="0.1" oninput="calcEMI()"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Tenure (months)</label>
+          <input type="number" class="form-control-smart" id="emiTenure" value="24" oninput="calcEMI()"/>
+        </div>
+      </div>
+      <div class="emi-result" id="emiResult">
+        <div class="emi-val"><div class="val" id="emiMonthly">–</div><div class="lbl">Monthly EMI</div></div>
+        <div class="emi-val"><div class="val" id="emiTotal">–</div><div class="lbl">Total Payable</div></div>
+        <div class="emi-val"><div class="val" id="emiInterest">–</div><div class="lbl">Total Interest</div></div>
+      </div>
+      <div style="margin-top:1.5rem;max-width:400px;">
+        <canvas id="emiChart" height="180"></canvas>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+let emiChartInst = null;
+
+function autoLPI() {
+  const loan = +document.getElementById('loan_amnt').value;
+  const inc  = +document.getElementById('person_income').value;
+  if (loan && inc) document.getElementById('loan_percent_income').value = (loan/inc).toFixed(4);
+}
+document.getElementById('person_income').addEventListener('input', autoLPI);
+
+async function submitPrediction() {
+  const btn = document.getElementById('predictBtn');
+  const fields = ['person_age','person_income','person_emp_length','loan_amnt','loan_int_rate',
+                  'loan_grade','loan_percent_income','person_home_ownership','loan_intent',
+                  'cb_person_default_on_file','cb_person_cred_hist_length'];
+  const payload = {};
+  for (const f of fields) {
+    const el = document.getElementById(f);
+    const val = el ? el.value : '';
+    if (!val) { showToast('Please fill all fields', 'error'); el && el.focus(); return; }
+    payload[f] = val;
+  }
+  btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analyzing…'; btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/predict', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+    showResult(data);
+    // Prefill EMI
+    document.getElementById('emiPrincipal').value = payload.loan_amnt;
+    document.getElementById('emiRate').value = payload.loan_int_rate;
+    calcEMI();
+    showToast('Prediction complete!', 'success');
+  } catch(e) {
+    showToast('Prediction failed. Try again.', 'error');
+  }
+  btn.innerHTML = '<i class="fa fa-brain"></i> Predict Loan Eligibility'; btn.disabled = false;
+}
+
+function showResult(data) {
+  const isApproved = data.result === 'APPROVED';
+  const riskColor  = data.risk_pct > 60 ? 'var(--red)' : data.risk_pct > 35 ? 'var(--amber)' : 'var(--green)';
+  document.getElementById('resultPanel').innerHTML = `
+    <div class="result-decision ${isApproved?'result-approved':'result-rejected'}">
+      ${isApproved ? '✓ APPROVED' : '✗ REJECTED'}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+      <div class="glass metric-card" style="text-align:center;padding:1rem;">
+        <div class="metric-label">Risk Score</div>
+        <div class="metric-value" style="font-size:1.6rem;color:${riskColor}">${data.risk_pct}%</div>
+      </div>
+      <div class="glass metric-card" style="text-align:center;padding:1rem;">
+        <div class="metric-label">Confidence</div>
+        <div class="metric-value" style="font-size:1.6rem;color:var(--accent)">${data.confidence}%</div>
+      </div>
+    </div>
+    <div style="margin-bottom:1.5rem;">
+      <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;">
+        <span>Approval Prob.</span><span>${data.prob_approved}%</span>
+      </div>
+      <div style="height:10px;border-radius:5px;background:var(--surface2);overflow:hidden;">
+        <div style="width:${data.prob_approved}%;height:100%;border-radius:5px;background:linear-gradient(90deg,${isApproved?'var(--green)':'var(--red)'},${isApproved?'#34d399':'#f87171'});transition:width 1s ease;"></div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border-radius:12px;padding:1rem;margin-bottom:1.5rem;">
+      <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:0.5rem;">AI Recommendation</div>
+      <div style="font-size:0.875rem;line-height:1.6;">${data.recommendation}</div>
+    </div>
+    <a href="/api/export-pdf/${data.prediction_id}" class="btn-ghost w-100 text-center d-block" style="padding:0.7rem;">
+      <i class="fa fa-file-pdf" style="color:var(--red)"></i> Download PDF Report
+    </a>
+  `;
+}
+
+function calcEMI() {
+  const P = +document.getElementById('emiPrincipal').value;
+  const r = (+document.getElementById('emiRate').value) / 12 / 100;
+  const n = +document.getElementById('emiTenure').value;
+  if (!P || !r || !n) return;
+  const emi = (P * r * Math.pow(1+r,n)) / (Math.pow(1+r,n) - 1);
+  const total = emi * n;
+  const interest = total - P;
+  const fmt = v => '₹' + Number(v.toFixed(0)).toLocaleString('en-IN');
+  document.getElementById('emiMonthly').textContent  = fmt(emi);
+  document.getElementById('emiTotal').textContent    = fmt(total);
+  document.getElementById('emiInterest').textContent = fmt(interest);
+  // Chart
+  const ctx = document.getElementById('emiChart').getContext('2d');
+  if (emiChartInst) emiChartInst.destroy();
+  emiChartInst = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels:['Principal','Interest'], datasets:[{ data:[P.toFixed(0), interest.toFixed(0)],
+      backgroundColor:['#00d4ff','#7c3aed'], borderWidth:0, borderRadius:4 }]},
+    options:{ plugins:{ legend:{position:'bottom'} }, cutout:'60%' }
+  });
+}
+calcEMI();
+</script>
+{% endblock %}
